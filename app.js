@@ -15,7 +15,10 @@ const state = {
   shieldPulse: 0.84,
 };
 
+const CAPTAIN_NAME = "JULIAN";
+
 const statusMessages = [
+  `Captain ${CAPTAIN_NAME} command profile synced to the bridge glass.`,
   "Long-range array aligned with Coruscant lane.",
   "Visual simulation loop stable. No live systems attached.",
   "Micro-meteor traffic drifting below shield threshold.",
@@ -139,8 +142,8 @@ const planets = [
 const tacticalShips = [
   {
     type: "destroyer",
-    color: "#d7e8ff",
-    engine: "#62dbff",
+    color: "#ffe39a",
+    engine: "#ffd76d",
     xBase: 0.31,
     yBase: 0.2,
     xDrift: 0.04,
@@ -148,12 +151,13 @@ const tacticalShips = [
     speed: 0.00018,
     scale: 1.44,
     rotation: 0.18,
-    label: "Imperial Destroyer",
+    flagship: true,
+    label: `Flagship ${CAPTAIN_NAME}`,
   },
   {
     type: "tie",
-    color: "#e6f2ff",
-    engine: "#58d5ff",
+    color: "#ffd993",
+    engine: "#ffca67",
     xBase: 0.74,
     yBase: 0.68,
     xDrift: 0.04,
@@ -164,8 +168,8 @@ const tacticalShips = [
   },
   {
     type: "tie",
-    color: "#d3eaff",
-    engine: "#35bcff",
+    color: "#ffe2a4",
+    engine: "#ffc75f",
     xBase: 0.24,
     yBase: 0.74,
     xDrift: 0.03,
@@ -190,8 +194,8 @@ const tacticalShips = [
   },
 ];
 const radarContacts = [
-  { type: "tie", angle: 0.52, radius: 0.54, speed: 0.0008, color: "#86ecff" },
-  { type: "destroyer", angle: -1.24, radius: 0.7, speed: 0.00022, color: "#d8e8ff" },
+  { type: "tie", angle: 0.52, radius: 0.54, speed: 0.0008, color: "#ffd37a" },
+  { type: "tie", angle: -1.24, radius: 0.7, speed: 0.00022, color: "#ffe39b" },
   { type: "interceptor", angle: 2.32, radius: 0.38, speed: 0.0011, color: "#ff8b79", hostile: true },
 ];
 
@@ -746,8 +750,12 @@ function drawShipShadow(ctx, scale, width, height, alpha = 0.22) {
   ctx.fill();
 }
 
-function getShipPalette(hostile = false) {
-  if (hostile) {
+function getShipRole(unit) {
+  return unit?.flagship ? "flagship" : unit?.hostile ? "hostile" : "ally";
+}
+
+function getShipPalette(role = "ally") {
+  if (role === "hostile") {
     return {
       hullBright: "rgba(255, 184, 168, 0.98)",
       hullMid: "rgba(255, 115, 84, 0.92)",
@@ -755,20 +763,62 @@ function getShipPalette(hostile = false) {
       edge: "rgba(255, 203, 190, 0.98)",
       panel: "rgba(255, 145, 126, 0.55)",
       core: "rgba(255, 220, 210, 0.92)",
+      undersideA: "rgba(86, 22, 18, 0.9)",
+      undersideB: "rgba(166, 68, 42, 0.84)",
+      grid: "rgba(255, 158, 140, 0.28)",
+      towerBase: "rgba(255, 152, 132, 0.75)",
+      towerTop: "rgba(255, 219, 204, 0.8)",
+      slit: "rgba(255, 235, 228, 0.65)",
+      ring: "rgba(255, 151, 133, 0.82)",
+      label: "rgba(255, 155, 145, 0.9)",
+      shadow: "rgba(255, 124, 114, 0.28)",
+      radarFill: "rgba(255, 124, 114, 0.18)",
+    };
+  }
+  if (role === "flagship") {
+    return {
+      hullBright: "rgba(255, 248, 228, 0.99)",
+      hullMid: "rgba(255, 214, 126, 0.95)",
+      hullDark: "rgba(82, 59, 25, 0.96)",
+      edge: "rgba(255, 240, 188, 0.98)",
+      panel: "rgba(255, 215, 118, 0.56)",
+      core: "rgba(255, 246, 214, 0.96)",
+      undersideA: "rgba(46, 30, 10, 0.92)",
+      undersideB: "rgba(143, 103, 48, 0.84)",
+      grid: "rgba(255, 222, 148, 0.32)",
+      towerBase: "rgba(255, 225, 165, 0.82)",
+      towerTop: "rgba(255, 249, 225, 0.92)",
+      slit: "rgba(255, 240, 184, 0.82)",
+      ring: "rgba(255, 220, 112, 0.9)",
+      label: "rgba(255, 236, 182, 0.96)",
+      shadow: "rgba(255, 211, 98, 0.34)",
+      radarFill: "rgba(255, 220, 112, 0.22)",
     };
   }
   return {
-    hullBright: "rgba(245, 249, 255, 0.98)",
-    hullMid: "rgba(154, 178, 205, 0.92)",
-    hullDark: "rgba(34, 48, 67, 0.96)",
-    edge: "rgba(227, 245, 255, 0.98)",
-    panel: "rgba(165, 214, 255, 0.4)",
-    core: "rgba(209, 236, 255, 0.94)",
+    hullBright: "rgba(251, 244, 226, 0.97)",
+    hullMid: "rgba(214, 189, 145, 0.91)",
+    hullDark: "rgba(48, 39, 26, 0.96)",
+    edge: "rgba(245, 225, 182, 0.9)",
+    panel: "rgba(255, 208, 128, 0.34)",
+    core: "rgba(248, 236, 204, 0.92)",
+    undersideA: "rgba(24, 19, 12, 0.92)",
+    undersideB: "rgba(95, 76, 49, 0.84)",
+    grid: "rgba(255, 210, 136, 0.2)",
+    towerBase: "rgba(229, 207, 164, 0.76)",
+    towerTop: "rgba(253, 246, 230, 0.88)",
+    slit: "rgba(255, 225, 154, 0.76)",
+    ring: "rgba(255, 214, 126, 0.76)",
+    label: "rgba(245, 228, 194, 0.9)",
+    shadow: "rgba(255, 206, 98, 0.22)",
+    radarFill: "rgba(255, 214, 126, 0.14)",
   };
 }
 
-function drawImperialDestroyer(ctx, scale, hostile = false) {
-  const palette = getShipPalette(hostile);
+function drawImperialDestroyer(ctx, scale, role = "ally") {
+  const palette = getShipPalette(role);
+  const hostile = role === "hostile";
+  const flagship = role === "flagship";
   const topHull = [
     [62 * scale, 0],
     [24 * scale, -16 * scale],
@@ -782,13 +832,13 @@ function drawImperialDestroyer(ctx, scale, hostile = false) {
     [24 * scale, 16 * scale],
   ];
   const underside = offsetPoints(topHull, -14 * scale, 9 * scale);
-  drawShipShadow(ctx, scale, 88 * scale, 18 * scale, hostile ? 0.25 : 0.2);
+  drawShipShadow(ctx, scale, 88 * scale, 18 * scale, hostile ? 0.25 : flagship ? 0.24 : 0.2);
 
   const undersideFill = ctx.createLinearGradient(-82 * scale, 14 * scale, 30 * scale, -10 * scale);
-  undersideFill.addColorStop(0, hostile ? "rgba(86, 22, 18, 0.9)" : "rgba(18, 28, 44, 0.92)");
-  undersideFill.addColorStop(1, hostile ? "rgba(166, 68, 42, 0.84)" : "rgba(64, 89, 116, 0.84)");
+  undersideFill.addColorStop(0, palette.undersideA);
+  undersideFill.addColorStop(1, palette.undersideB);
   ctx.fillStyle = undersideFill;
-  ctx.strokeStyle = hostile ? "rgba(255, 158, 140, 0.28)" : "rgba(169, 205, 255, 0.2)";
+  ctx.strokeStyle = palette.grid;
   ctx.lineWidth = 1.1 * scale;
   drawClosedPath(ctx, underside);
   ctx.fill();
@@ -815,8 +865,8 @@ function drawImperialDestroyer(ctx, scale, hostile = false) {
     [8 * scale, 8 * scale],
   ];
   const spineFill = ctx.createLinearGradient(-48 * scale, -8 * scale, 40 * scale, 10 * scale);
-  spineFill.addColorStop(0, "rgba(34, 52, 76, 0.82)");
-  spineFill.addColorStop(1, "rgba(223, 240, 255, 0.68)");
+  spineFill.addColorStop(0, palette.hullDark);
+  spineFill.addColorStop(1, flagship ? "rgba(255, 229, 168, 0.78)" : palette.core);
   ctx.fillStyle = spineFill;
   drawClosedPath(ctx, dorsalSpine);
   ctx.fill();
@@ -852,19 +902,29 @@ function drawImperialDestroyer(ctx, scale, hostile = false) {
     [-10 * scale, 4 * scale],
     [-10 * scale, -4 * scale],
   ];
-  ctx.fillStyle = hostile ? "rgba(255, 152, 132, 0.75)" : "rgba(214, 232, 248, 0.78)";
+  ctx.fillStyle = palette.towerBase;
   drawClosedPath(ctx, towerBase);
   ctx.fill();
-  ctx.fillStyle = hostile ? "rgba(255, 219, 204, 0.8)" : "rgba(245, 250, 255, 0.88)";
+  ctx.fillStyle = palette.towerTop;
   drawClosedPath(ctx, towerTop);
   ctx.fill();
 
-  ctx.fillStyle = hostile ? "rgba(255, 235, 228, 0.65)" : "rgba(170, 233, 255, 0.8)";
+  ctx.fillStyle = palette.slit;
   ctx.fillRect(-5.5 * scale, -1.3 * scale, 10 * scale, 2.6 * scale);
   ctx.beginPath();
   ctx.arc(-12 * scale, -2 * scale, 1.7 * scale, 0, Math.PI * 2);
   ctx.arc(-12 * scale, 2 * scale, 1.7 * scale, 0, Math.PI * 2);
   ctx.fill();
+
+  if (flagship) {
+    ctx.strokeStyle = palette.ring;
+    ctx.lineWidth = 1.1 * scale;
+    ctx.beginPath();
+    ctx.moveTo(12 * scale, -5 * scale);
+    ctx.lineTo(28 * scale, 0);
+    ctx.lineTo(12 * scale, 5 * scale);
+    ctx.stroke();
+  }
 }
 
 function drawTiePanel(ctx, points, fillA, fillB, edge, gridColor) {
@@ -899,9 +959,11 @@ function drawTiePanel(ctx, points, fillA, fillB, edge, gridColor) {
   }
 }
 
-function drawTieFighter(ctx, scale, hostile = false) {
-  const palette = getShipPalette(hostile);
-  drawShipShadow(ctx, scale, 44 * scale, 16 * scale, hostile ? 0.22 : 0.18);
+function drawTieFighter(ctx, scale, role = "ally") {
+  const palette = getShipPalette(role);
+  const hostile = role === "hostile";
+  const flagship = role === "flagship";
+  drawShipShadow(ctx, scale, 44 * scale, 16 * scale, hostile ? 0.22 : flagship ? 0.2 : 0.18);
 
   const leftPanel = [
     [-42 * scale, -27 * scale],
@@ -917,21 +979,21 @@ function drawTieFighter(ctx, scale, hostile = false) {
   drawTiePanel(
     ctx,
     leftPanel,
-    hostile ? "rgba(78, 24, 24, 0.95)" : "rgba(14, 24, 40, 0.96)",
-    hostile ? "rgba(39, 12, 12, 0.9)" : "rgba(6, 12, 20, 0.94)",
-    hostile ? "rgba(255, 164, 145, 0.75)" : "rgba(164, 216, 255, 0.62)",
-    hostile ? "rgba(255, 135, 122, 0.28)" : "rgba(113, 189, 255, 0.18)"
+    hostile ? "rgba(78, 24, 24, 0.95)" : flagship ? "rgba(84, 62, 18, 0.96)" : "rgba(34, 27, 18, 0.96)",
+    hostile ? "rgba(39, 12, 12, 0.9)" : flagship ? "rgba(24, 18, 8, 0.95)" : "rgba(12, 9, 6, 0.94)",
+    hostile ? "rgba(255, 164, 145, 0.75)" : flagship ? "rgba(255, 231, 165, 0.8)" : "rgba(255, 214, 138, 0.66)",
+    hostile ? "rgba(255, 135, 122, 0.28)" : flagship ? "rgba(255, 215, 116, 0.22)" : "rgba(255, 196, 106, 0.16)"
   );
   drawTiePanel(
     ctx,
     rightPanel,
-    hostile ? "rgba(78, 24, 24, 0.95)" : "rgba(14, 24, 40, 0.96)",
-    hostile ? "rgba(39, 12, 12, 0.9)" : "rgba(6, 12, 20, 0.94)",
-    hostile ? "rgba(255, 164, 145, 0.75)" : "rgba(164, 216, 255, 0.62)",
-    hostile ? "rgba(255, 135, 122, 0.28)" : "rgba(113, 189, 255, 0.18)"
+    hostile ? "rgba(78, 24, 24, 0.95)" : flagship ? "rgba(84, 62, 18, 0.96)" : "rgba(34, 27, 18, 0.96)",
+    hostile ? "rgba(39, 12, 12, 0.9)" : flagship ? "rgba(24, 18, 8, 0.95)" : "rgba(12, 9, 6, 0.94)",
+    hostile ? "rgba(255, 164, 145, 0.75)" : flagship ? "rgba(255, 231, 165, 0.8)" : "rgba(255, 214, 138, 0.66)",
+    hostile ? "rgba(255, 135, 122, 0.28)" : flagship ? "rgba(255, 215, 116, 0.22)" : "rgba(255, 196, 106, 0.16)"
   );
 
-  ctx.strokeStyle = hostile ? "rgba(255, 176, 160, 0.86)" : "rgba(194, 231, 255, 0.78)";
+  ctx.strokeStyle = hostile ? "rgba(255, 176, 160, 0.86)" : palette.edge;
   ctx.lineWidth = 2.2 * scale;
   drawOpenPath(ctx, [
     [-18 * scale, 0],
@@ -971,9 +1033,11 @@ function drawTieFighter(ctx, scale, hostile = false) {
   ctx.stroke();
 }
 
-function drawTieInterceptor(ctx, scale, hostile = false) {
-  const palette = getShipPalette(hostile);
-  drawShipShadow(ctx, scale, 52 * scale, 18 * scale, hostile ? 0.24 : 0.2);
+function drawTieInterceptor(ctx, scale, role = "ally") {
+  const palette = getShipPalette(role);
+  const hostile = role === "hostile";
+  const flagship = role === "flagship";
+  drawShipShadow(ctx, scale, 52 * scale, 18 * scale, hostile ? 0.24 : flagship ? 0.22 : 0.2);
 
   const leftPanel = [
     [-56 * scale, -28 * scale],
@@ -989,21 +1053,21 @@ function drawTieInterceptor(ctx, scale, hostile = false) {
   drawTiePanel(
     ctx,
     leftPanel,
-    hostile ? "rgba(96, 24, 22, 0.95)" : "rgba(18, 30, 48, 0.96)",
-    hostile ? "rgba(46, 11, 10, 0.92)" : "rgba(8, 16, 26, 0.94)",
-    hostile ? "rgba(255, 173, 153, 0.78)" : "rgba(180, 226, 255, 0.64)",
-    hostile ? "rgba(255, 132, 114, 0.26)" : "rgba(104, 177, 255, 0.16)"
+    hostile ? "rgba(96, 24, 22, 0.95)" : flagship ? "rgba(88, 66, 18, 0.96)" : "rgba(40, 30, 18, 0.96)",
+    hostile ? "rgba(46, 11, 10, 0.92)" : flagship ? "rgba(26, 19, 8, 0.95)" : "rgba(14, 10, 6, 0.94)",
+    hostile ? "rgba(255, 173, 153, 0.78)" : flagship ? "rgba(255, 233, 170, 0.8)" : "rgba(255, 218, 146, 0.68)",
+    hostile ? "rgba(255, 132, 114, 0.26)" : flagship ? "rgba(255, 214, 114, 0.22)" : "rgba(255, 191, 102, 0.16)"
   );
   drawTiePanel(
     ctx,
     rightPanel,
-    hostile ? "rgba(96, 24, 22, 0.95)" : "rgba(18, 30, 48, 0.96)",
-    hostile ? "rgba(46, 11, 10, 0.92)" : "rgba(8, 16, 26, 0.94)",
-    hostile ? "rgba(255, 173, 153, 0.78)" : "rgba(180, 226, 255, 0.64)",
-    hostile ? "rgba(255, 132, 114, 0.26)" : "rgba(104, 177, 255, 0.16)"
+    hostile ? "rgba(96, 24, 22, 0.95)" : flagship ? "rgba(88, 66, 18, 0.96)" : "rgba(40, 30, 18, 0.96)",
+    hostile ? "rgba(46, 11, 10, 0.92)" : flagship ? "rgba(26, 19, 8, 0.95)" : "rgba(14, 10, 6, 0.94)",
+    hostile ? "rgba(255, 173, 153, 0.78)" : flagship ? "rgba(255, 233, 170, 0.8)" : "rgba(255, 218, 146, 0.68)",
+    hostile ? "rgba(255, 132, 114, 0.26)" : flagship ? "rgba(255, 214, 114, 0.22)" : "rgba(255, 191, 102, 0.16)"
   );
 
-  ctx.strokeStyle = hostile ? "rgba(255, 190, 176, 0.86)" : "rgba(212, 236, 255, 0.8)";
+  ctx.strokeStyle = hostile ? "rgba(255, 190, 176, 0.86)" : palette.edge;
   ctx.lineWidth = 2 * scale;
   drawOpenPath(ctx, [
     [-21 * scale, -2 * scale],
@@ -1044,21 +1108,21 @@ function drawTieInterceptor(ctx, scale, hostile = false) {
   ctx.stroke();
 }
 
-function drawShipHull(ctx, type, scale, hostile = false) {
+function drawShipHull(ctx, type, scale, role = "ally") {
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
 
   if (type === "destroyer") {
-    drawImperialDestroyer(ctx, scale, hostile);
+    drawImperialDestroyer(ctx, scale, role);
     return;
   }
 
   if (type === "interceptor") {
-    drawTieInterceptor(ctx, scale, hostile);
+    drawTieInterceptor(ctx, scale, role);
     return;
   }
 
-  drawTieFighter(ctx, scale, hostile);
+  drawTieFighter(ctx, scale, role);
 }
 
 function getShipSpriteMetrics(type, scale) {
@@ -1071,8 +1135,8 @@ function getShipSpriteMetrics(type, scale) {
   return { width: Math.ceil(124 * scale), height: Math.ceil(104 * scale) };
 }
 
-function getShipSprite(type, scale, hostile = false) {
-  const key = `${type}:${scale}:${hostile ? 1 : 0}`;
+function getShipSprite(type, scale, role = "ally") {
+  const key = `${type}:${scale}:${role}`;
   const cached = spriteCaches.ships.get(key);
   if (cached) return cached;
 
@@ -1083,7 +1147,7 @@ function getShipSprite(type, scale, hostile = false) {
 
   const ctx = canvas.getContext("2d");
   ctx.translate(metrics.width / 2, metrics.height / 2);
-  drawShipHull(ctx, type, scale, hostile);
+  drawShipHull(ctx, type, scale, role);
 
   const sprite = {
     canvas,
@@ -1131,15 +1195,17 @@ function drawShipTrail(ctx, type, scale, engineColor) {
 
 function drawTacticalShip(ctx, ship, x, y, rotation, time) {
   const compact = isCompactDisplay();
+  const role = getShipRole(ship);
+  const palette = getShipPalette(role);
   const renderScale = getShipRenderScale(ship, starfieldCanvas.clientWidth, starfieldCanvas.clientHeight);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rotation);
   drawShipTrail(ctx, ship.type, renderScale, ship.engine);
 
-  const sprite = getShipSprite(ship.type, renderScale, ship.hostile);
+  const sprite = getShipSprite(ship.type, renderScale, role);
   ctx.shadowBlur = ship.type === "destroyer" ? 16 : 10;
-  ctx.shadowColor = ship.hostile ? "rgba(255, 124, 114, 0.28)" : "rgba(170, 220, 255, 0.24)";
+  ctx.shadowColor = palette.shadow;
   ctx.drawImage(sprite.canvas, -sprite.anchorX, -sprite.anchorY);
   ctx.shadowBlur = 0;
 
@@ -1165,7 +1231,7 @@ function drawTacticalShip(ctx, ship, x, y, rotation, time) {
   ctx.shadowBlur = 0;
 
   if (ship.type === "destroyer") {
-    ctx.strokeStyle = ship.hostile ? "rgba(255, 160, 143, 0.52)" : "rgba(120, 205, 255, 0.55)";
+    ctx.strokeStyle = palette.ring;
     ctx.lineWidth = 1.3;
     ctx.beginPath();
     ctx.moveTo(-26 * renderScale, -9 * renderScale);
@@ -1174,19 +1240,49 @@ function drawTacticalShip(ctx, ship, x, y, rotation, time) {
     ctx.stroke();
   }
 
-  if (ship.label && !compact) {
+  if (ship.flagship) {
+    const pulse = 0.34 + (Math.sin(time * 0.0042) + 1) * 0.12;
+    ctx.strokeStyle = `rgba(255, 218, 104, ${pulse})`;
+    ctx.lineWidth = 1.45 * renderScale;
+    ctx.beginPath();
+    ctx.ellipse(-10 * renderScale, 0, 94 * renderScale, 35 * renderScale, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(48 * renderScale, 0, 8 * renderScale, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (ship.label && (!compact || ship.flagship)) {
     ctx.rotate(-rotation);
-    ctx.fillStyle = ship.hostile ? "rgba(255, 155, 145, 0.9)" : "rgba(193, 223, 255, 0.9)";
-    ctx.font = `600 ${ship.type === "destroyer" ? 11 : 10}px "Orbitron", sans-serif`;
-    ctx.fillText(ship.label.toUpperCase(), 12 * renderScale, -18 * renderScale + Math.sin(time * 0.003) * 2);
+    ctx.font = `600 ${ship.flagship ? 12 : ship.type === "destroyer" ? 11 : 10}px "Orbitron", sans-serif`;
+    const labelText = ship.label.toUpperCase();
+    const labelX = ship.flagship ? 24 * renderScale : 12 * renderScale;
+    const labelY = ship.flagship
+      ? 26 * renderScale + Math.sin(time * 0.003) * 2
+      : -18 * renderScale + Math.sin(time * 0.003) * 2;
+    if (ship.flagship) {
+      const metrics = ctx.measureText(labelText);
+      const plateX = labelX - 6 * renderScale;
+      const plateY = labelY - 12 * renderScale;
+      const plateWidth = metrics.width + 12 * renderScale;
+      const plateHeight = 15 * renderScale;
+      ctx.fillStyle = "rgba(20, 15, 8, 0.7)";
+      ctx.fillRect(plateX, plateY, plateWidth, plateHeight);
+      ctx.strokeStyle = "rgba(255, 220, 112, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(plateX, plateY, plateWidth, plateHeight);
+    }
+    ctx.fillStyle = palette.label;
+    ctx.fillText(labelText, labelX, labelY);
   }
 
   ctx.restore();
 }
 
-function drawRadarGlyph(ctx, type, scale, color, hostile = false) {
-  ctx.strokeStyle = color;
-  ctx.fillStyle = hostile ? "rgba(255, 124, 114, 0.18)" : "rgba(134, 236, 255, 0.12)";
+function drawRadarGlyph(ctx, type, scale, role = "ally") {
+  const palette = getShipPalette(role);
+  ctx.strokeStyle = palette.ring;
+  ctx.fillStyle = palette.radarFill;
   ctx.lineWidth = 1.4;
   if (type === "destroyer") {
     ctx.beginPath();
@@ -1235,8 +1331,8 @@ function drawRadarGlyph(ctx, type, scale, color, hostile = false) {
   ctx.stroke();
 }
 
-function getRadarGlyphSprite(type, scale, hostile = false) {
-  const key = `${type}:${scale}:${hostile ? 1 : 0}`;
+function getRadarGlyphSprite(type, scale, role = "ally") {
+  const key = `${type}:${scale}:${role}`;
   const cached = spriteCaches.radar.get(key);
   if (cached) return cached;
 
@@ -1246,13 +1342,7 @@ function getRadarGlyphSprite(type, scale, hostile = false) {
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   ctx.translate(size / 2, size / 2);
-  drawRadarGlyph(
-    ctx,
-    type,
-    scale,
-    hostile ? "rgba(255, 124, 114, 0.95)" : "rgba(180, 239, 255, 0.95)",
-    hostile
-  );
+  drawRadarGlyph(ctx, type, scale, role);
 
   const sprite = { canvas, size, anchor: size / 2 };
   spriteCaches.radar.set(key, sprite);
@@ -1363,13 +1453,19 @@ function drawRadar(time) {
   });
 
   radarContacts.forEach((contact, index) => {
+    const role = getShipRole(contact);
     const angle = contact.angle + Math.sin(time * contact.speed + index) * 0.3;
     const radial = radius * (contact.radius + Math.cos(time * contact.speed * 1.7 + index) * 0.04);
     const x = cx + Math.cos(angle) * radial;
     const y = cy + Math.sin(angle) * radial;
     const alpha = contact.hostile ? 0.9 : 0.75;
 
-    ctxRadar.strokeStyle = contact.hostile ? `rgba(255, 118, 101, ${alpha})` : `rgba(131, 238, 255, ${alpha})`;
+    ctxRadar.strokeStyle =
+      role === "hostile"
+        ? `rgba(255, 118, 101, ${alpha})`
+        : role === "flagship"
+          ? `rgba(255, 219, 112, ${alpha})`
+          : `rgba(255, 211, 126, ${alpha})`;
     ctxRadar.lineWidth = 1;
     ctxRadar.beginPath();
     ctxRadar.arc(x, y, contact.type === "destroyer" ? 10 : 8, 0, Math.PI * 2);
@@ -1379,15 +1475,32 @@ function drawRadar(time) {
     ctxRadar.translate(x, y);
     ctxRadar.rotate(angle + Math.PI / 2);
     const glyphScale = contact.type === "destroyer" ? 0.9 : 0.7;
-    const glyph = getRadarGlyphSprite(contact.type, glyphScale, contact.hostile);
+    const glyph = getRadarGlyphSprite(contact.type, glyphScale, role);
     ctxRadar.drawImage(glyph.canvas, -glyph.anchor, -glyph.anchor);
     ctxRadar.restore();
   });
 
-  ctxRadar.fillStyle = "rgba(120, 180, 255, 0.95)";
-  ctxRadar.beginPath();
-  ctxRadar.arc(cx, cy, 7, 0, Math.PI * 2);
-  ctxRadar.fill();
+  const flagship = tacticalShips.find((ship) => ship.flagship);
+  if (flagship) {
+    const pulse = 11.5 + (Math.sin(time * 0.0042) + 1) * 1.8;
+    ctxRadar.strokeStyle = `rgba(255, 220, 114, ${0.5 + (Math.sin(time * 0.0042) + 1) * 0.15})`;
+    ctxRadar.lineWidth = 1.5;
+    ctxRadar.beginPath();
+    ctxRadar.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctxRadar.stroke();
+
+    ctxRadar.fillStyle = "rgba(255, 227, 146, 0.26)";
+    ctxRadar.beginPath();
+    ctxRadar.arc(cx, cy, 7.2, 0, Math.PI * 2);
+    ctxRadar.fill();
+
+    ctxRadar.save();
+    ctxRadar.translate(cx, cy);
+    ctxRadar.rotate(-Math.PI / 2);
+    const glyph = getRadarGlyphSprite(flagship.type, 0.74, "flagship");
+    ctxRadar.drawImage(glyph.canvas, -glyph.anchor, -glyph.anchor);
+    ctxRadar.restore();
+  }
 
   ctxRadar.restore();
 }
@@ -1546,7 +1659,7 @@ refreshViewportLayout();
 updateClock();
 updateMeters();
 updateTelemetryText();
-writeStatus("Command deck boot sequence complete. Welcome aboard.");
+writeStatus(`Command deck boot sequence complete. Bienvenido Capitan ${CAPTAIN_NAME}.`);
 renderState.rafId = requestAnimationFrame(animate);
 
 const readyGate = document.fonts?.ready

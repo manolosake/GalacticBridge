@@ -299,6 +299,7 @@ body.is-ready .console-stage {
 .brand-panel {
   display: grid;
   place-content: center;
+  gap: 6px;
   text-align: center;
   border: 1px solid rgba(103, 122, 148, 0.5);
   background:
@@ -319,6 +320,19 @@ body.is-ready .console-stage {
   letter-spacing: 0.14em;
   font-size: 0.72rem;
   text-transform: uppercase;
+}
+
+.brand-panel__welcome {
+  justify-self: center;
+  padding: 0.34rem 0.86rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 108, 0.34);
+  background: linear-gradient(180deg, rgba(92, 70, 18, 0.84), rgba(24, 18, 8, 0.98));
+  color: #ffe7aa;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 247, 220, 0.08), 0 0 24px rgba(255, 194, 79, 0.16);
 }
 
 .alert-chip {
@@ -1531,6 +1545,12 @@ body[data-flash="dock"] .command-button--green {
     font-size: 0.68rem;
   }
 
+  .brand-panel__welcome {
+    padding: 0.28rem 0.74rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+  }
+
   .subnav-strip,
   .status-ribbon {
     height: 100%;
@@ -2231,6 +2251,12 @@ body[data-flash="dock"] .command-button--green {
   .brand-panel__sub,
   .system__sub {
     font-size: 0.58rem;
+  }
+
+  .brand-panel__welcome {
+    padding: 0.24rem 0.6rem;
+    font-size: 0.52rem;
+    letter-spacing: 0.11em;
   }
 
   .segmented-bar {
