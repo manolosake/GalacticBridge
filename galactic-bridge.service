@@ -1,0 +1,14 @@
+[Unit]
+Description=Galactic Bridge static preview server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aponce/GalacticBridge
+ExecStart=/usr/bin/python3 -m http.server 8787 --bind 127.0.0.1 --directory /home/aponce/GalacticBridge
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
