@@ -298,8 +298,11 @@ body.is-ready .console-stage {
 
 .brand-panel {
   display: grid;
-  place-content: center;
+  align-content: center;
+  justify-items: center;
   gap: 6px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   text-align: center;
   border: 1px solid rgba(103, 122, 148, 0.5);
   background:
@@ -308,29 +311,30 @@ body.is-ready .console-stage {
 }
 
 .brand-panel__title {
-  font-size: clamp(1.4rem, 2.3vw, 2.5rem);
+  font-size: clamp(1.84rem, 2.92vw, 3.18rem);
   font-weight: 800;
-  letter-spacing: 0.12em;
-  line-height: 0.94;
+  letter-spacing: 0.1em;
+  line-height: 1.08;
+  padding-top: 0.08em;
   text-wrap: balance;
 }
 
 .brand-panel__sub {
   color: var(--muted);
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   font-size: 0.72rem;
   text-transform: uppercase;
 }
 
 .brand-panel__welcome {
   justify-self: center;
-  width: min(100%, 260px);
-  padding: 0.46rem 1rem;
+  width: min(100%, 346px);
+  padding: 0.62rem 1.32rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 212, 108, 0.34);
   background: linear-gradient(180deg, rgba(92, 70, 18, 0.84), rgba(24, 18, 8, 0.98));
   color: #ffe7aa;
-  font-size: 0.82rem;
+  font-size: 1.06rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   line-height: 1;
@@ -355,8 +359,9 @@ body.is-ready .console-stage {
 }
 
 .subnav-strip {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
   gap: 1rem;
   margin-top: 10px;
   padding: 10px 14px;
@@ -364,6 +369,30 @@ body.is-ready .console-stage {
   color: var(--muted);
   font-size: 0.76rem;
   letter-spacing: 0.18em;
+}
+
+.captain-banner {
+  justify-self: center;
+  width: fit-content;
+  padding: 0.58rem 1.32rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 108, 0.38);
+  background: linear-gradient(180deg, rgba(110, 83, 20, 0.9), rgba(34, 24, 8, 0.98));
+  color: #ffe8ab;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 247, 220, 0.12), 0 0 24px rgba(255, 194, 79, 0.18);
+}
+
+.subnav-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.2rem;
 }
 
 .bridge-grid {
@@ -1499,7 +1528,7 @@ body[data-flash="dock"] .command-button--green {
     height: 100%;
     padding: 10px;
     display: grid;
-    grid-template-rows: 108px 34px minmax(0, 1fr) 34px;
+    grid-template-rows: 136px 34px minmax(0, 1fr) 34px;
     gap: 8px;
     transform: none !important;
   }
@@ -1528,6 +1557,11 @@ body[data-flash="dock"] .command-button--green {
     padding: 10px 12px;
   }
 
+  .brand-panel {
+    padding-top: 10px;
+    padding-bottom: 6px;
+  }
+
   .power-core {
     width: 54px;
     height: 54px;
@@ -1542,18 +1576,18 @@ body[data-flash="dock"] .command-button--green {
   }
 
   .brand-panel__title {
-    font-size: clamp(1.35rem, 1.8vw, 2rem);
+    font-size: clamp(1.72rem, 2.18vw, 2.46rem);
   }
 
   .brand-panel__sub,
   .system__sub {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
   }
 
   .brand-panel__welcome {
-    width: min(100%, 224px);
-    padding: 0.38rem 0.8rem;
-    font-size: 0.68rem;
+    width: min(100%, 298px);
+    padding: 0.5rem 1.02rem;
+    font-size: 0.86rem;
     letter-spacing: 0.08em;
   }
 
@@ -1563,6 +1597,21 @@ body[data-flash="dock"] .command-button--green {
     padding: 7px 12px;
     align-items: center;
     font-size: 0.72rem;
+  }
+
+  .subnav-strip {
+    grid-template-columns: auto minmax(220px, 1fr) auto;
+    gap: 0.75rem;
+  }
+
+  .captain-banner {
+    padding: 0.48rem 1rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+  }
+
+  .subnav-meta {
+    gap: 0.9rem;
   }
 
   .bridge-grid {
@@ -2215,7 +2264,7 @@ body[data-flash="dock"] .command-button--green {
   .console-shell {
     width: min(1880px, calc(100vw - 12px));
     padding: 6px;
-    grid-template-rows: 88px 28px minmax(0, 1fr) 28px;
+    grid-template-rows: 108px 28px minmax(0, 1fr) 28px;
     gap: 5px;
   }
 
@@ -2250,8 +2299,13 @@ body[data-flash="dock"] .command-button--green {
     padding: 8px 10px;
   }
 
+  .brand-panel {
+    padding-top: 10px;
+    padding-bottom: 6px;
+  }
+
   .brand-panel__title {
-    font-size: clamp(1.1rem, 1.6vw, 1.7rem);
+    font-size: clamp(1.36rem, 1.9vw, 2rem);
   }
 
   .brand-panel__sub,
@@ -2260,10 +2314,26 @@ body[data-flash="dock"] .command-button--green {
   }
 
   .brand-panel__welcome {
-    width: min(100%, 198px);
-    padding: 0.32rem 0.64rem;
-    font-size: 0.58rem;
+    width: min(100%, 254px);
+    padding: 0.4rem 0.82rem;
+    font-size: 0.74rem;
     letter-spacing: 0.06em;
+  }
+
+  .subnav-strip {
+    grid-template-columns: auto minmax(180px, 1fr) auto;
+    gap: 0.5rem;
+    font-size: 0.64rem;
+  }
+
+  .captain-banner {
+    padding: 0.36rem 0.82rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+  }
+
+  .subnav-meta {
+    gap: 0.7rem;
   }
 
   .segmented-bar {
