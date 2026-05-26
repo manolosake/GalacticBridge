@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GalacticBridge Preview</title>
+    <style>
+      body {
+        margin: 0;
+        background: #050913;
+        color: #eef6ff;
+        font: 16px/1.4 Arial, sans-serif;
+      }
+
+      .checkpoints {
+        padding: 14px 18px;
+        border-bottom: 1px solid rgba(127, 169, 210, 0.28);
+        background: #0d1420;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      ul {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 6px 18px;
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        height: calc(100vh - 116px);
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="checkpoints">
+      <h1>Reviewer Checkpoints</h1>
+      <ul>
+        <li>First viewport says GalacticBridge and shows contract workflow.</li>
+        <li>Contract buttons update destination, objective, risk, ETA, and payout.</li>
+        <li>Scan, Boost, Dock, and Emergency advance or hold mission phases.</li>
+        <li>Mission Systems use Beacon, Tow Link, and Deflectors.</li>
+        <li>No protected franchise or armament copy is visible.</li>
+      </ul>
+    </section>
+    <iframe src="../index.html" title="GalacticBridge runnable mission workflow"></iframe>
+  </body>
+</html>

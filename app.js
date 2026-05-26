@@ -2,6 +2,9 @@ const state = {
   power: true,
   mode: "manual",
   action: "cruise",
+  contractId: "orion",
+  phaseIndex: 0,
+  hold: false,
   resource: {
     fuel: 0.78,
     shields: 0.84,
@@ -15,19 +18,58 @@ const state = {
   shieldPulse: 0.84,
 };
 
-const CAPTAIN_NAME = "JULIAN";
+const phases = ["Briefing", "Scan", "Align", "Jump/Dock", "Complete"];
+
+const contracts = {
+  orion: {
+    title: "Orion Relay Run",
+    destination: "Orion Span Terminal",
+    objective: "Synchronize a pop-up comm relay before doors open.",
+    risk: 0.32,
+    confidence: 0.84,
+    eta: "11 min",
+    payout: "$18.5K",
+    resources: "2 crew, relay beacon, guest cue package",
+    feed: "Venue operator needs a high-throughput mission with clear group callouts.",
+    coords: { x: -12.45, y: 4.88, z: 67.22 },
+  },
+  helios: {
+    title: "Helios Freight Escort",
+    destination: "Helios Trade Ring",
+    objective: "Guide premium cargo pods through a storm-lit show corridor.",
+    risk: 0.48,
+    confidence: 0.72,
+    eta: "16 min",
+    payout: "$24K",
+    resources: "Tow link, deflectors, freight marshal track",
+    feed: "Event producer wants suspense without conflict language or franchise exposure.",
+    coords: { x: 31.04, y: -18.72, z: 42.5 },
+  },
+  vega: {
+    title: "Vega Medical Corridor",
+    destination: "Vega Relief Dock",
+    objective: "Open a safe arrival corridor for an urgent medical charter.",
+    risk: 0.26,
+    confidence: 0.9,
+    eta: "9 min",
+    payout: "$31K",
+    resources: "Priority beacon, med bay dock, calm-ops lighting",
+    feed: "Healthcare gala team needs a heroic cooperative finale with no armaments.",
+    coords: { x: -4.7, y: 52.14, z: -21.6 },
+  },
+};
 
 const statusMessages = [
-  `Captain ${CAPTAIN_NAME} command profile synced to the bridge glass.`,
-  "Long-range array aligned with Coruscant lane.",
-  "Visual simulation loop stable. No live systems attached.",
-  "Micro-meteor traffic drifting below shield threshold.",
-  "Auxiliary reactors balancing output for cinematic mode.",
-  "Docking corridor marked as cosmetic and safe.",
-  "Nebula bloom detected on outer rim display grid.",
+  "Operator profile synced to the bridge glass.",
+  "Long-range array aligned with selected contract lane.",
+  "Mission simulation loop stable. No live systems attached.",
+  "Micro-meteor traffic drifting below deflector threshold.",
+  "Auxiliary reactors balancing output for venue-safe show mode.",
+  "Docking corridor marked as cooperative and guest-safe.",
+  "Nebula bloom detected on outer route display grid.",
   "Bridge ambience synced with reactive panel glow.",
-  "Imperial escort wing gliding across the tactical glass.",
-  "Destroyer contact drifting through the upper corridor.",
+  "Charter escort wing gliding across the mission glass.",
+  "Carrier contact drifting through the upper corridor.",
 ];
 
 const actionMessages = {
@@ -41,7 +83,7 @@ const actionMessages = {
 const modeMessages = {
   manual: "Manual control selected. Pilot authority at maximum.",
   auto: "Auto routing engaged. Flight path self-correcting.",
-  combat: "Combat envelope lit. Threat overlays intensified.",
+  hazard: "Hazard envelope lit. Threat overlays intensified.",
   cruise: "Cruise mode resumed. Systems drifting into calm cadence.",
 };
 
@@ -74,14 +116,22 @@ const telemetryEls = {
   coordX: document.getElementById("coordX"),
   coordY: document.getElementById("coordY"),
   coordZ: document.getElementById("coordZ"),
+  contractBanner: document.getElementById("contractBanner"),
+  missionTitle: document.getElementById("missionTitle"),
+  phaseHint: document.getElementById("phaseHint"),
+  phaseSteps: document.getElementById("phaseSteps"),
+  phaseCopy: document.getElementById("phaseCopy"),
+  missionStatus: document.getElementById("missionStatus"),
+  missionEta: document.getElementById("missionEta"),
+  missionPayout: document.getElementById("missionPayout"),
   heatValue: document.getElementById("heatValue"),
   driftValue: document.getElementById("driftValue"),
   biasValue: document.getElementById("biasValue"),
   throttleHandle: document.getElementById("throttleHandle"),
   emergencyButton: document.getElementById("emergencyButton"),
-  laserState: document.getElementById("laserState"),
-  torpedoState: document.getElementById("torpedoState"),
-  missileState: document.getElementById("missileState"),
+  beaconState: document.getElementById("beaconState"),
+  towState: document.getElementById("towState"),
+  deflectorState: document.getElementById("deflectorState"),
   engineBars: document.getElementById("engineBars"),
   signalBars: document.getElementById("signalBars"),
   auxBars: document.getElementById("auxBars"),
@@ -141,7 +191,7 @@ const planets = [
 ];
 const tacticalShips = [
   {
-    type: "destroyer",
+    type: "carrier",
     color: "#ffe39a",
     engine: "#ffd76d",
     xBase: 0.31,
@@ -152,10 +202,10 @@ const tacticalShips = [
     scale: 1.44,
     rotation: 0.18,
     flagship: true,
-    label: `Flagship ${CAPTAIN_NAME}`,
+    label: "Crew Lead GB-01",
   },
   {
-    type: "tie",
+    type: "wing",
     color: "#ffd993",
     engine: "#ffca67",
     xBase: 0.74,
@@ -167,7 +217,7 @@ const tacticalShips = [
     rotation: -2.42,
   },
   {
-    type: "tie",
+    type: "wing",
     color: "#ffe2a4",
     engine: "#ffc75f",
     xBase: 0.24,
@@ -179,7 +229,7 @@ const tacticalShips = [
     rotation: -0.6,
   },
   {
-    type: "interceptor",
+    type: "hazard",
     color: "#ffccc6",
     engine: "#ff8f6a",
     xBase: 0.78,
@@ -190,13 +240,13 @@ const tacticalShips = [
     scale: 0.96,
     rotation: 2.74,
     hostile: true,
-    label: "Interceptor",
+    label: "Drift Hazard",
   },
 ];
 const radarContacts = [
-  { type: "tie", angle: 0.52, radius: 0.54, speed: 0.0008, color: "#ffd37a" },
-  { type: "tie", angle: -1.24, radius: 0.7, speed: 0.00022, color: "#ffe39b" },
-  { type: "interceptor", angle: 2.32, radius: 0.38, speed: 0.0011, color: "#ff8b79", hostile: true },
+  { type: "wing", angle: 0.52, radius: 0.54, speed: 0.0008, color: "#ffd37a" },
+  { type: "wing", angle: -1.24, radius: 0.7, speed: 0.00022, color: "#ffe39b" },
+  { type: "hazard", angle: 2.32, radius: 0.38, speed: 0.0011, color: "#ff8b79", hostile: true },
 ];
 
 function createSegments(container, count, className = "") {
@@ -233,6 +283,10 @@ const throttleRightSegments = createSegments(telemetryEls.throttleRight, 8);
 const weaponChargeSegments = createSegments(telemetryEls.weaponCharge, 12);
 const shieldScaleSegments = createSegments(telemetryEls.shieldScale, 10);
 const alarmSegments = createSegments(telemetryEls.alarmStrip, 8);
+const phaseSegments = createSegments(telemetryEls.phaseSteps, phases.length);
+phaseSegments.forEach((segment, index) => {
+  segment.textContent = phases[index];
+});
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -269,6 +323,52 @@ function setSegmentState(segments, value) {
   });
 }
 
+function getActiveContract() {
+  return contracts[state.contractId] || contracts.orion;
+}
+
+function getPhaseStatus() {
+  if (state.hold) return "Incident hold";
+  if (state.phaseIndex === phases.length - 1) return "Complete";
+  return `${phases[state.phaseIndex]} active`;
+}
+
+function updateMissionTelemetryText() {
+  const contract = getActiveContract();
+  const routeRisk = state.hold ? Math.min(0.94, contract.risk + 0.22) : contract.risk;
+  const routeConfidence = state.hold ? Math.max(0.42, contract.confidence - 0.22) : contract.confidence;
+
+  telemetryEls.threatValue.textContent = formatPercent(routeRisk);
+  telemetryEls.screenShieldValue.textContent = formatPercent(routeConfidence);
+  telemetryEls.commsCopy.textContent = `${contract.title}: ${contract.feed}`;
+  telemetryEls.shieldCopy.textContent = `Route confidence ${formatPercent(routeConfidence)} // risk ${formatPercent(routeRisk)}.`;
+  telemetryEls.alertChip.textContent = state.hold ? "Hold" : state.phaseIndex === phases.length - 1 ? "Closed" : "Nominal";
+}
+
+function updateMissionDisplay() {
+  const contract = getActiveContract();
+  const phase = phases[state.phaseIndex];
+  telemetryEls.contractBanner.textContent = `${contract.title} // ${phase}`;
+  telemetryEls.missionTitle.textContent = contract.title;
+  telemetryEls.modeReadout.textContent = state.hold ? "Incident hold // stabilize route" : `${phase} // ${contract.objective}`;
+  telemetryEls.phaseHint.textContent = phase;
+  telemetryEls.phaseCopy.textContent = state.hold
+    ? "Emergency hold is active. Press Scan to recheck hazards, then Boost to recover alignment."
+    : contract.resources;
+  telemetryEls.missionStatus.textContent = getPhaseStatus();
+  telemetryEls.missionEta.textContent = state.phaseIndex === phases.length - 1 ? "Delivered" : contract.eta;
+  telemetryEls.missionPayout.textContent = contract.payout;
+  telemetryEls.targetChip.textContent = `Objective: ${contract.objective}`;
+  telemetryEls.destinationTag.textContent = `Destination // ${contract.destination}`;
+  updateMissionTelemetryText();
+
+  phaseSegments.forEach((segment, index) => {
+    segment.classList.toggle("is-on", index <= state.phaseIndex);
+    segment.classList.toggle("is-current", index === state.phaseIndex && !state.hold);
+    segment.classList.toggle("is-hold", state.hold && index === state.phaseIndex);
+  });
+}
+
 function writeStatus(message) {
   telemetryEls.statusFeed.textContent = message;
 }
@@ -283,15 +383,14 @@ function updateTelemetryText() {
   telemetryEls.shieldValue.textContent = formatPercent(state.resource.shields);
   telemetryEls.oxygenValue.textContent = formatPercent(state.resource.oxygen);
   telemetryEls.commsValue.textContent = formatPercent(state.resource.comms);
-  telemetryEls.threatValue.textContent = formatPercent(state.threat);
-  telemetryEls.screenShieldValue.textContent = formatPercent(state.shieldPulse);
+  updateMissionTelemetryText();
   telemetryEls.coordX.textContent = state.coords.x.toFixed(2);
   telemetryEls.coordY.textContent = state.coords.y.toFixed(2);
   telemetryEls.coordZ.textContent = state.coords.z.toFixed(2);
   telemetryEls.heatValue.textContent = `${Math.round(42 + state.resource.energy * 46 + state.threat * 12)}C`;
   telemetryEls.driftValue.textContent = `${(state.resource.warp * 0.71).toFixed(2)}`;
   telemetryEls.biasValue.textContent =
-    state.mode === "combat" ? "Redline" : state.mode === "auto" ? "Auto" : state.mode === "cruise" ? "Blue" : "Green";
+    state.hold ? "Hold" : state.phaseIndex >= 2 ? "Aligned" : state.phaseIndex === 1 ? "Scan" : "Ready";
 }
 
 function updateMeters() {
@@ -308,9 +407,9 @@ function updateMeters() {
   setSegmentState(throttleRightSegments, 0.3 + state.resource.warp * 0.6);
   setSegmentState(weaponChargeSegments, 0.24 + state.threat * 0.72);
   setSegmentState(shieldScaleSegments, state.resource.shields);
-  setSegmentState(alarmSegments, state.mode === "combat" || state.action === "eject" ? 0.9 : 0.35);
+  setSegmentState(alarmSegments, state.hold || state.action === "eject" ? 0.9 : 0.35);
   switchSegments.forEach((segment, index) => {
-    const shouldBeOn = (index + Math.round(state.resource.energy * 10)) % 2 === 0 || (state.mode === "combat" && index < 4);
+    const shouldBeOn = (index + Math.round(state.resource.energy * 10)) % 2 === 0 || (state.hold && index < 4);
     segment.classList.toggle("is-on", shouldBeOn);
     segment.style.opacity = shouldBeOn ? "1" : "0.45";
   });
@@ -396,7 +495,7 @@ function tickTelemetry() {
     state.resource.comms = drift(state.resource.comms, 0.04, 0.32, 0.96);
     state.resource.energy = drift(state.resource.energy, 0.05, 0.28, 0.98);
     state.resource.warp = drift(state.resource.warp, 0.045, 0.18, 0.96);
-    state.threat = drift(state.threat, state.mode === "combat" ? 0.08 : 0.035, 0.12, state.mode === "combat" ? 0.92 : 0.68);
+    state.threat = drift(state.threat, state.mode === "hazard" ? 0.08 : 0.035, 0.12, state.mode === "hazard" ? 0.92 : 0.68);
   }
 
   state.shieldPulse = clamp((state.resource.shields + state.resource.energy) / 2, 0, 1);
@@ -404,26 +503,20 @@ function tickTelemetry() {
   state.coords.y = drift(state.coords.y, 0.37, -99, 99);
   state.coords.z = drift(state.coords.z, 0.31, -99, 99);
 
-  const throttle = 36 + state.resource.warp * 48 + (state.action === "boost" ? 8 : 0);
-  telemetryEls.throttleHandle.style.top = `${clamp(88 - throttle, 18, 80)}%`;
-  telemetryEls.commsCopy.textContent =
-    state.mode === "combat"
-      ? "Priority combat relay open. Signal noise rising."
-      : state.action === "dock"
-        ? "Docking band reserved. Guidance beacons pulsing."
-        : "Relay channel clean // no distortion";
-  telemetryEls.shieldCopy.textContent =
-    state.power
-      ? "Deflection envelope holding."
-      : "Shield lattice dimmed. Passive shell retained.";
-  telemetryEls.alertChip.textContent = state.mode === "combat" || state.action === "eject" ? "High alert" : state.power ? "Nominal" : "Standby";
+  if (telemetryEls.throttleHandle) {
+    const throttle = 36 + state.resource.warp * 48 + (state.action === "boost" ? 8 : 0);
+    telemetryEls.throttleHandle.style.top = `${clamp(88 - throttle, 18, 80)}%`;
+  }
   updateMeters();
   updateTelemetryText();
 }
 
 function cycleStatusMessage() {
-  const base = statusMessages[Math.floor(Math.random() * statusMessages.length)];
-  const extra = state.mode === "combat" ? " Threat paint active." : state.action === "boost" ? " Velocity bloom increasing." : "";
+  const contract = getActiveContract();
+  const base = state.phaseIndex === phases.length - 1
+    ? `${contract.title} complete. ${contract.payout} value captured for the operator.`
+    : statusMessages[Math.floor(Math.random() * statusMessages.length)];
+  const extra = state.hold ? " Incident hold active." : state.action === "boost" ? " Velocity bloom increasing." : "";
   writeStatus(base + extra);
 }
 
@@ -691,8 +784,8 @@ function isCompactDisplay(height = starfieldCanvas.clientHeight) {
 
 function getShipRenderScale(ship, w, h) {
   if (!isCompactDisplay(h)) return ship.scale;
-  if (ship.type === "destroyer") return ship.scale * 0.82;
-  if (ship.type === "interceptor") return ship.scale * 0.88;
+  if (ship.type === "carrier") return ship.scale * 0.82;
+  if (ship.type === "hazard") return ship.scale * 0.88;
   return ship.scale * 0.9;
 }
 
@@ -701,15 +794,15 @@ function getTacticalShipPose(ship, time, w, h) {
   const drift = Math.cos(time * ship.speed * 0.72 + ship.scale * 1.8);
   const compact = isCompactDisplay(h);
   const xBaseAdjust =
-    compact && ship.type === "destroyer"
+    compact && ship.type === "carrier"
       ? 0.04
-      : compact && ship.type === "interceptor"
+      : compact && ship.type === "hazard"
         ? -0.04
         : 0;
   const yBaseAdjust =
-    compact && ship.type === "destroyer"
+    compact && ship.type === "carrier"
       ? -0.01
-      : compact && ship.type === "interceptor"
+      : compact && ship.type === "hazard"
         ? 0.02
         : 0;
   return {
@@ -815,7 +908,7 @@ function getShipPalette(role = "ally") {
   };
 }
 
-function drawImperialDestroyer(ctx, scale, role = "ally") {
+function drawCharterCarrier(ctx, scale, role = "ally") {
   const palette = getShipPalette(role);
   const hostile = role === "hostile";
   const flagship = role === "flagship";
@@ -927,7 +1020,7 @@ function drawImperialDestroyer(ctx, scale, role = "ally") {
   }
 }
 
-function drawTiePanel(ctx, points, fillA, fillB, edge, gridColor) {
+function drawWingPanel(ctx, points, fillA, fillB, edge, gridColor) {
   const backPanel = offsetPoints(points, 4, 3);
   const panelGlow = ctx.createLinearGradient(points[0][0], points[0][1], points[4][0], points[4][1]);
   panelGlow.addColorStop(0, fillA);
@@ -959,7 +1052,7 @@ function drawTiePanel(ctx, points, fillA, fillB, edge, gridColor) {
   }
 }
 
-function drawTieFighter(ctx, scale, role = "ally") {
+function drawWingFighter(ctx, scale, role = "ally") {
   const palette = getShipPalette(role);
   const hostile = role === "hostile";
   const flagship = role === "flagship";
@@ -976,7 +1069,7 @@ function drawTieFighter(ctx, scale, role = "ally") {
     [-50 * scale, -16 * scale],
   ];
   const rightPanel = leftPanel.map(([x, y]) => [-x, y]);
-  drawTiePanel(
+  drawWingPanel(
     ctx,
     leftPanel,
     hostile ? "rgba(78, 24, 24, 0.95)" : flagship ? "rgba(84, 62, 18, 0.96)" : "rgba(34, 27, 18, 0.96)",
@@ -984,7 +1077,7 @@ function drawTieFighter(ctx, scale, role = "ally") {
     hostile ? "rgba(255, 164, 145, 0.75)" : flagship ? "rgba(255, 231, 165, 0.8)" : "rgba(255, 214, 138, 0.66)",
     hostile ? "rgba(255, 135, 122, 0.28)" : flagship ? "rgba(255, 215, 116, 0.22)" : "rgba(255, 196, 106, 0.16)"
   );
-  drawTiePanel(
+  drawWingPanel(
     ctx,
     rightPanel,
     hostile ? "rgba(78, 24, 24, 0.95)" : flagship ? "rgba(84, 62, 18, 0.96)" : "rgba(34, 27, 18, 0.96)",
@@ -1033,7 +1126,7 @@ function drawTieFighter(ctx, scale, role = "ally") {
   ctx.stroke();
 }
 
-function drawTieInterceptor(ctx, scale, role = "ally") {
+function drawDriftHazard(ctx, scale, role = "ally") {
   const palette = getShipPalette(role);
   const hostile = role === "hostile";
   const flagship = role === "flagship";
@@ -1050,7 +1143,7 @@ function drawTieInterceptor(ctx, scale, role = "ally") {
     [-48 * scale, 0],
   ];
   const rightPanel = leftPanel.map(([x, y]) => [-x, y]);
-  drawTiePanel(
+  drawWingPanel(
     ctx,
     leftPanel,
     hostile ? "rgba(96, 24, 22, 0.95)" : flagship ? "rgba(88, 66, 18, 0.96)" : "rgba(40, 30, 18, 0.96)",
@@ -1058,7 +1151,7 @@ function drawTieInterceptor(ctx, scale, role = "ally") {
     hostile ? "rgba(255, 173, 153, 0.78)" : flagship ? "rgba(255, 233, 170, 0.8)" : "rgba(255, 218, 146, 0.68)",
     hostile ? "rgba(255, 132, 114, 0.26)" : flagship ? "rgba(255, 214, 114, 0.22)" : "rgba(255, 191, 102, 0.16)"
   );
-  drawTiePanel(
+  drawWingPanel(
     ctx,
     rightPanel,
     hostile ? "rgba(96, 24, 22, 0.95)" : flagship ? "rgba(88, 66, 18, 0.96)" : "rgba(40, 30, 18, 0.96)",
@@ -1112,24 +1205,24 @@ function drawShipHull(ctx, type, scale, role = "ally") {
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
 
-  if (type === "destroyer") {
-    drawImperialDestroyer(ctx, scale, role);
+  if (type === "carrier") {
+    drawCharterCarrier(ctx, scale, role);
     return;
   }
 
-  if (type === "interceptor") {
-    drawTieInterceptor(ctx, scale, role);
+  if (type === "hazard") {
+    drawDriftHazard(ctx, scale, role);
     return;
   }
 
-  drawTieFighter(ctx, scale, role);
+  drawWingFighter(ctx, scale, role);
 }
 
 function getShipSpriteMetrics(type, scale) {
-  if (type === "destroyer") {
+  if (type === "carrier") {
     return { width: Math.ceil(212 * scale), height: Math.ceil(118 * scale) };
   }
-  if (type === "interceptor") {
+  if (type === "hazard") {
     return { width: Math.ceil(138 * scale), height: Math.ceil(118 * scale) };
   }
   return { width: Math.ceil(124 * scale), height: Math.ceil(104 * scale) };
@@ -1163,21 +1256,21 @@ function getShipSprite(type, scale, role = "ally") {
 function drawShipTrail(ctx, type, scale, engineColor) {
   ctx.save();
   ctx.rotate(Math.PI);
-  const trailLength = type === "destroyer" ? 72 * scale : type === "interceptor" ? 30 * scale : 24 * scale;
-  const trailWidth = type === "destroyer" ? 8 * scale : type === "interceptor" ? 3.8 * scale : 3.2 * scale;
+  const trailLength = type === "carrier" ? 72 * scale : type === "hazard" ? 30 * scale : 24 * scale;
+  const trailWidth = type === "carrier" ? 8 * scale : type === "hazard" ? 3.8 * scale : 3.2 * scale;
   const glow = ctx.createLinearGradient(0, 0, trailLength, 0);
   glow.addColorStop(0, engineColor);
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.strokeStyle = glow;
   ctx.lineWidth = trailWidth;
-  if (type === "destroyer") {
+  if (type === "carrier") {
     [-8 * scale, 0, 8 * scale].forEach((offsetY) => {
       ctx.beginPath();
       ctx.moveTo(-18 * scale, offsetY);
       ctx.lineTo(-trailLength, offsetY);
       ctx.stroke();
     });
-  } else if (type === "interceptor") {
+  } else if (type === "hazard") {
     [-4 * scale, 4 * scale].forEach((offsetY) => {
       ctx.beginPath();
       ctx.moveTo(-8 * scale, offsetY);
@@ -1204,21 +1297,21 @@ function drawTacticalShip(ctx, ship, x, y, rotation, time) {
   drawShipTrail(ctx, ship.type, renderScale, ship.engine);
 
   const sprite = getShipSprite(ship.type, renderScale, role);
-  ctx.shadowBlur = ship.type === "destroyer" ? 16 : 10;
+  ctx.shadowBlur = ship.type === "carrier" ? 16 : 10;
   ctx.shadowColor = palette.shadow;
   ctx.drawImage(sprite.canvas, -sprite.anchorX, -sprite.anchorY);
   ctx.shadowBlur = 0;
 
-  ctx.shadowBlur = ship.type === "destroyer" ? 24 : 16;
+  ctx.shadowBlur = ship.type === "carrier" ? 24 : 16;
   ctx.shadowColor = ship.engine;
   ctx.fillStyle = ship.engine;
-  if (ship.type === "destroyer") {
+  if (ship.type === "carrier") {
     [-10 * renderScale, 0, 10 * renderScale].forEach((offsetY) => {
       ctx.beginPath();
       ctx.arc(-72 * renderScale, offsetY, 4.2 * renderScale, 0, Math.PI * 2);
       ctx.fill();
     });
-  } else if (ship.type === "interceptor") {
+  } else if (ship.type === "hazard") {
     ctx.beginPath();
     ctx.arc(-10 * renderScale, -3 * renderScale, 2.6 * renderScale, 0, Math.PI * 2);
     ctx.arc(-10 * renderScale, 3 * renderScale, 2.6 * renderScale, 0, Math.PI * 2);
@@ -1230,7 +1323,7 @@ function drawTacticalShip(ctx, ship, x, y, rotation, time) {
   }
   ctx.shadowBlur = 0;
 
-  if (ship.type === "destroyer") {
+  if (ship.type === "carrier") {
     ctx.strokeStyle = palette.ring;
     ctx.lineWidth = 1.3;
     ctx.beginPath();
@@ -1254,7 +1347,7 @@ function drawTacticalShip(ctx, ship, x, y, rotation, time) {
 
   if (ship.label && (!compact || ship.flagship)) {
     ctx.rotate(-rotation);
-    ctx.font = `600 ${ship.flagship ? 12 : ship.type === "destroyer" ? 11 : 10}px "Orbitron", sans-serif`;
+    ctx.font = `600 ${ship.flagship ? 12 : ship.type === "carrier" ? 11 : 10}px "Orbitron", sans-serif`;
     const labelText = ship.label.toUpperCase();
     const labelX = ship.flagship ? 24 * renderScale : 12 * renderScale;
     const labelY = ship.flagship
@@ -1284,7 +1377,7 @@ function drawRadarGlyph(ctx, type, scale, role = "ally") {
   ctx.strokeStyle = palette.ring;
   ctx.fillStyle = palette.radarFill;
   ctx.lineWidth = 1.4;
-  if (type === "destroyer") {
+  if (type === "carrier") {
     ctx.beginPath();
     ctx.moveTo(15 * scale, 0);
     ctx.lineTo(6 * scale, -5 * scale);
@@ -1302,7 +1395,7 @@ function drawRadarGlyph(ctx, type, scale, role = "ally") {
     ctx.stroke();
     return;
   }
-  if (type === "interceptor") {
+  if (type === "hazard") {
     ctx.beginPath();
     ctx.moveTo(11 * scale, 0);
     ctx.lineTo(3 * scale, -4 * scale);
@@ -1336,7 +1429,7 @@ function getRadarGlyphSprite(type, scale, role = "ally") {
   const cached = spriteCaches.radar.get(key);
   if (cached) return cached;
 
-  const size = Math.ceil((type === "destroyer" ? 42 : type === "interceptor" ? 34 : 30) * scale + 12);
+  const size = Math.ceil((type === "carrier" ? 42 : type === "hazard" ? 34 : 30) * scale + 12);
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -1468,13 +1561,13 @@ function drawRadar(time) {
           : `rgba(255, 211, 126, ${alpha})`;
     ctxRadar.lineWidth = 1;
     ctxRadar.beginPath();
-    ctxRadar.arc(x, y, contact.type === "destroyer" ? 10 : 8, 0, Math.PI * 2);
+    ctxRadar.arc(x, y, contact.type === "carrier" ? 10 : 8, 0, Math.PI * 2);
     ctxRadar.stroke();
 
     ctxRadar.save();
     ctxRadar.translate(x, y);
     ctxRadar.rotate(angle + Math.PI / 2);
-    const glyphScale = contact.type === "destroyer" ? 0.9 : 0.7;
+    const glyphScale = contact.type === "carrier" ? 0.9 : 0.7;
     const glyph = getRadarGlyphSprite(contact.type, glyphScale, role);
     ctxRadar.drawImage(glyph.canvas, -glyph.anchor, -glyph.anchor);
     ctxRadar.restore();
@@ -1571,49 +1664,69 @@ function triggerFlash(kind) {
 
 function setAction(action) {
   state.action = action;
-  telemetryEls.modeReadout.textContent =
-    action === "boost"
-      ? "Boost corridor engaged"
-      : action === "dock"
-        ? "Docking vectors projected"
-        : action === "scan"
-          ? "Spectral scan in progress"
-          : action === "eject"
-            ? "Emergency simulation armed"
-            : modeMessages[state.mode].replace(/\.$/, "");
-
-  if (action === "boost") {
-    telemetryEls.targetChip.textContent = "Target lock: Slipstream corridor";
-    telemetryEls.destinationTag.textContent = "Destination // Velocity surge";
-    telemetryEls.commsValue.textContent = "91%";
-  } else if (action === "dock") {
-    telemetryEls.targetChip.textContent = "Docking gate: Aurek station";
-    telemetryEls.destinationTag.textContent = "Destination // Hangar spine";
-  } else if (action === "scan") {
-    telemetryEls.targetChip.textContent = "Scan sweep: Outer rim fragments";
-    telemetryEls.destinationTag.textContent = "Destination // Mapping unknown grid";
-  } else if (action === "eject") {
-    telemetryEls.targetChip.textContent = "Emergency alarm: Cabin sealed";
-    telemetryEls.destinationTag.textContent = "Destination // Stay aboard";
-  } else {
-    telemetryEls.targetChip.textContent = "Target lock: Coruscant lane";
-    telemetryEls.destinationTag.textContent = "Destination // Coruscant Prime";
-  }
+  const contract = getActiveContract();
+  let message = actionMessages[action] || `${contract.title} updated.`;
 
   if (action === "eject") {
+    state.hold = true;
     telemetryEls.emergencyButton.textContent = "Alarm";
-    telemetryEls.laserState.textContent = "Hot";
-    telemetryEls.torpedoState.textContent = "Primed";
-    telemetryEls.missileState.textContent = "Tracking";
+    telemetryEls.beaconState.textContent = "Hold";
+    telemetryEls.towState.textContent = "Paused";
+    telemetryEls.deflectorState.textContent = "Raised";
+    message = `${contract.title}: incident hold declared. Guests stabilize route before continuing.`;
   } else {
-    telemetryEls.emergencyButton.textContent = state.mode === "combat" ? "Armed" : "Standby";
-    telemetryEls.laserState.textContent = state.mode === "combat" ? "Overwatch" : "Online";
-    telemetryEls.torpedoState.textContent = state.mode === "combat" ? "Hot" : "Ready";
-    telemetryEls.missileState.textContent = state.mode === "combat" ? "Locking" : "Armed";
+    if (state.hold && action === "scan") {
+      state.hold = false;
+      message = `${contract.title}: hazards rescanned. Route is cleared for alignment.`;
+    } else if (action === "scan") {
+      state.phaseIndex = Math.max(state.phaseIndex, 1);
+      message = `${contract.title}: scan complete. ${contract.objective}`;
+    } else if (action === "boost" || action === "activate") {
+      if (state.phaseIndex < 2) {
+        state.phaseIndex = 2;
+        message = `${contract.title}: alignment boosted. Route confidence rising.`;
+      } else if (state.phaseIndex < 3) {
+        state.phaseIndex = 3;
+        message = `${contract.title}: jump corridor committed. Prepare dock handoff.`;
+      } else {
+        state.resource.warp = clamp(state.resource.warp + 0.12, 0, 1);
+        message = `${contract.title}: boost holds the corridor steady.`;
+      }
+    } else if (action === "dock") {
+      if (state.phaseIndex >= 3) {
+        state.phaseIndex = 4;
+        message = `${contract.title}: dock complete. Contract value ${contract.payout} secured.`;
+      } else {
+        message = `${contract.title}: dock queued. Complete scan and alignment first.`;
+      }
+    }
+    telemetryEls.emergencyButton.textContent = "Standby";
+    telemetryEls.beaconState.textContent = state.phaseIndex >= 1 ? "Guiding" : "Online";
+    telemetryEls.towState.textContent = state.phaseIndex >= 2 ? "Linked" : "Ready";
+    telemetryEls.deflectorState.textContent = state.phaseIndex >= 3 ? "Corridor" : "Active";
   }
 
-  writeStatus(actionMessages[action]);
+  updateMissionDisplay();
+  writeStatus(message);
   triggerFlash(action === "eject" ? "alert" : action);
+}
+
+function selectContract(contractId) {
+  state.contractId = contractId;
+  state.phaseIndex = 0;
+  state.hold = false;
+  state.action = "cruise";
+  state.coords = { ...getActiveContract().coords };
+  document.querySelectorAll("[data-contract]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.contract === contractId);
+  });
+  telemetryEls.emergencyButton.textContent = "Standby";
+  telemetryEls.beaconState.textContent = "Online";
+  telemetryEls.towState.textContent = "Ready";
+  telemetryEls.deflectorState.textContent = "Active";
+  updateMissionDisplay();
+  updateTelemetryText();
+  writeStatus(`${getActiveContract().title} selected. ${getActiveContract().feed}`);
 }
 
 function setMode(mode) {
@@ -1631,6 +1744,10 @@ document.querySelectorAll("[data-action]").forEach((button) => {
 
 document.querySelectorAll("[data-mode]").forEach((button) => {
   button.addEventListener("click", () => setMode(button.dataset.mode));
+});
+
+document.querySelectorAll("[data-contract]").forEach((button) => {
+  button.addEventListener("click", () => selectContract(button.dataset.contract));
 });
 
 telemetryEls.powerToggle.addEventListener("click", () => {
@@ -1659,7 +1776,8 @@ refreshViewportLayout();
 updateClock();
 updateMeters();
 updateTelemetryText();
-writeStatus(`Command deck boot sequence complete. Bienvenido Capitan ${CAPTAIN_NAME}.`);
+updateMissionDisplay();
+writeStatus("GalacticBridge mission workflow ready. Select a contract, then use Scan, Boost, and Dock to complete it.");
 renderState.rafId = requestAnimationFrame(animate);
 
 const readyGate = document.fonts?.ready
