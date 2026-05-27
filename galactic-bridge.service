@@ -1,12 +1,15 @@
 [Unit]
-Description=Galactic Bridge static preview server
+Description=Galactic Bridge preview server
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/aponce/GalacticBridge
-ExecStart=/usr/bin/python3 -m http.server 8787 --bind 127.0.0.1 --directory /home/aponce/GalacticBridge
+WorkingDirectory=%h/GalacticBridge
+Environment=HOST=127.0.0.1
+Environment=PORT=8787
+Environment=STATIC_ROOT=%h/GalacticBridge
+ExecStart=/usr/bin/python3 %h/GalacticBridge/server.py
 Restart=always
 RestartSec=2
 

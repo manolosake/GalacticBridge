@@ -32,5 +32,15 @@ No build step and no package install are required.
 Open `index.html` directly in a browser, or serve the folder with:
 
 ```bash
-python3 -m http.server 8787
+python3 server.py
+```
+
+The preview server exposes a deployment-friendly health check at `GET /health` and supports `HOST`, `PORT`, and `STATIC_ROOT` environment variables for service mode.
+
+## Test
+
+Run the server checks with:
+
+```bash
+python3 -m unittest discover -s tests
 ```
