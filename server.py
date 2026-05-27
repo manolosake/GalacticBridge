@@ -9,6 +9,7 @@ import os
 from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -47,24 +48,30 @@ class GalacticBridgeRequestHandler(SimpleHTTPRequestHandler):
     def _handle_health(self) -> None:
         directory = Path(self.directory)
         index_exists = (directory / "index.html").is_file()
-        contracts_present = self._contracts_path().is_file()
+        contracts_state = self._get_contracts_state()
         status = HTTPStatus.OK if index_exists else HTTPStatus.SERVICE_UNAVAILABLE
+        if contracts_state["status"] == "invalid":
+            status = HTTPStatus.SERVICE_UNAVAILABLE
         payload = {
-            "status": "ok" if index_exists else "degraded",
+            "status": "ok" if status == HTTPStatus.OK else "degraded",
             "asset_root": str(directory),
             "index_present": index_exists,
-            "contracts_present": contracts_present,
+            "contracts_present": contracts_state["status"] != "missing",
+            "contracts_status": contracts_state["status"],
         }
+        if contracts_state["error"]:
+            payload["contracts_error"] = contracts_state["error"]
         self._send_json(status, payload)
 
     def _handle_contracts(self) -> None:
-        payload = self._load_contract_payload()
-        if payload is None:
+        contracts_state = self._get_contracts_state()
+        if contracts_state["payload"] is None:
             self._send_json(
                 HTTPStatus.SERVICE_UNAVAILABLE,
-                {"status": "degraded", "error": "contracts data unavailable"},
+                {"status": "degraded", "error": contracts_state["error"]},
             )
             return
+        payload = contracts_state["payload"]
         self._send_json(
             HTTPStatus.OK,
             {
@@ -75,13 +82,14 @@ class GalacticBridgeRequestHandler(SimpleHTTPRequestHandler):
         )
 
     def _handle_contract_detail(self, contract_id: str) -> None:
-        payload = self._load_contract_payload()
-        if payload is None:
+        contracts_state = self._get_contracts_state()
+        if contracts_state["payload"] is None:
             self._send_json(
                 HTTPStatus.SERVICE_UNAVAILABLE,
-                {"status": "degraded", "error": "contracts data unavailable"},
+                {"status": "degraded", "error": contracts_state["error"]},
             )
             return
+        payload = contracts_state["payload"]
 
         contract = payload["contracts"].get(contract_id)
         if contract is None:
@@ -96,19 +104,25 @@ class GalacticBridgeRequestHandler(SimpleHTTPRequestHandler):
     def _contracts_path(self) -> Path:
         return Path(self.directory) / "data" / "contracts.json"
 
-    def _load_contract_payload(self) -> dict[str, Any] | None:
+    def _get_contracts_state(self) -> dict[str, Any]:
         try:
             with self._contracts_path().open(encoding="utf-8") as handle:
                 payload = json.load(handle)
         except FileNotFoundError:
-            return None
+            return {"status": "missing", "payload": None, "error": "contracts data unavailable"}
+        except JSONDecodeError:
+            return {"status": "invalid", "payload": None, "error": "contracts data is invalid JSON"}
 
         contracts = payload.get("contracts")
         phases = payload.get("phases")
         default_contract_id = payload.get("defaultContractId")
         if not isinstance(contracts, dict) or not isinstance(phases, list) or not isinstance(default_contract_id, str):
-            raise ValueError("contracts.json is missing required fields")
-        return payload
+            return {"status": "invalid", "payload": None, "error": "contracts data is missing required fields"}
+
+        if default_contract_id not in contracts:
+            return {"status": "invalid", "payload": None, "error": "default contract does not exist in contracts data"}
+
+        return {"status": "ok", "payload": payload, "error": None}
 
     def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
         body = json.dumps(payload).encode("utf-8")

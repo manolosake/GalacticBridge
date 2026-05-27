@@ -68,6 +68,25 @@ class ServerTestCase(unittest.TestCase):
             self.assertEqual(payload["status"], "degraded")
             self.assertFalse(payload["index_present"])
 
+    def test_health_endpoint_reports_invalid_when_contract_data_is_malformed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            (directory / "index.html").write_text("<!doctype html><title>ok</title>", encoding="utf-8")
+            (directory / "data").mkdir()
+            (directory / "data" / "contracts.json").write_text("{not-json", encoding="utf-8")
+
+            server, thread = self.start_server(directory)
+            try:
+                response, body = self.request(server, "/health")
+            finally:
+                self.stop_server(server, thread)
+
+            payload = json.loads(body)
+            self.assertEqual(response.status, 503)
+            self.assertEqual(payload["status"], "degraded")
+            self.assertEqual(payload["contracts_status"], "invalid")
+            self.assertEqual(payload["contracts_error"], "contracts data is invalid JSON")
+
     def test_contracts_endpoint_returns_shared_contract_payload(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             directory = Path(temp_dir)
@@ -96,6 +115,33 @@ class ServerTestCase(unittest.TestCase):
             self.assertEqual(payload["phases"], ["Briefing", "Scan"])
             self.assertEqual(sorted(payload["contracts"].keys()), ["orion", "vega"])
             self.assertEqual(response.getheader("Cache-Control"), "no-store")
+
+    def test_contracts_endpoint_returns_503_when_default_contract_is_invalid(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            directory = Path(temp_dir)
+            (directory / "index.html").write_text("<!doctype html><title>ok</title>", encoding="utf-8")
+            (directory / "data").mkdir()
+            (directory / "data" / "contracts.json").write_text(
+                json.dumps(
+                    {
+                        "contracts": {"orion": {"title": "Orion Relay Run"}},
+                        "phases": ["Briefing"],
+                        "defaultContractId": "vega",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            server, thread = self.start_server(directory)
+            try:
+                response, body = self.request(server, "/api/contracts")
+            finally:
+                self.stop_server(server, thread)
+
+            payload = json.loads(body)
+            self.assertEqual(response.status, 503)
+            self.assertEqual(payload["status"], "degraded")
+            self.assertEqual(payload["error"], "default contract does not exist in contracts data")
 
     def test_contract_detail_endpoint_returns_requested_contract(self):
         with tempfile.TemporaryDirectory() as temp_dir:
