@@ -1,0 +1,42 @@
+{
+  "contracts": {
+    "orion": {
+      "title": "Orion Relay Run",
+      "destination": "Orion Span Terminal",
+      "objective": "Synchronize a pop-up comm relay before doors open.",
+      "risk": 0.32,
+      "confidence": 0.84,
+      "eta": "11 min",
+      "payout": "$18.5K",
+      "resources": "2 crew, relay beacon, guest cue package",
+      "feed": "Venue operator needs a high-throughput mission with clear group callouts.",
+      "coords": { "x": -12.45, "y": 4.88, "z": 67.22 }
+    },
+    "helios": {
+      "title": "Helios Freight Escort",
+      "destination": "Helios Trade Ring",
+      "objective": "Guide premium cargo pods through a storm-lit show corridor.",
+      "risk": 0.48,
+      "confidence": 0.72,
+      "eta": "16 min",
+      "payout": "$24K",
+      "resources": "Tow link, deflectors, freight marshal track",
+      "feed": "Event producer wants suspense without conflict language or franchise exposure.",
+      "coords": { "x": 31.04, "y": -18.72, "z": 42.5 }
+    },
+    "vega": {
+      "title": "Vega Medical Corridor",
+      "destination": "Vega Relief Dock",
+      "objective": "Open a safe arrival corridor for an urgent medical charter.",
+      "risk": 0.26,
+      "confidence": 0.9,
+      "eta": "9 min",
+      "payout": "$31K",
+      "resources": "Priority beacon, med bay dock, calm-ops lighting",
+      "feed": "Healthcare gala team needs a heroic cooperative finale with no armaments.",
+      "coords": { "x": -4.7, "y": 52.14, "z": -21.6 }
+    }
+  },
+  "phases": ["Briefing", "Scan", "Align", "Jump/Dock", "Complete"],
+  "defaultContractId": "orion"
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GalacticBridge Mission Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css?v=20260314q" />
+  </head>
+  <body data-power="on">
+    <div class="viewport">
+      <div class="ambient-glow ambient-glow--left"></div>
+      <div class="ambient-glow ambient-glow--right"></div>
+      <div class="console-stage">
+      <main class="console-shell">
+        <header class="top-rack">
+          <section class="system power-system">
+            <div class="system__label">Power Core</div>
+            <button class="power-core" id="powerToggle" type="button" aria-pressed="true">
+              <span class="power-core__ring"></span>
+              <span class="power-core__inner"></span>
+            </button>
+            <div class="system__sub">Reactor Link</div>
+          </section>
+
+          <section class="system resource-system">
+            <div class="system__label">Fuel Reserve</div>
+            <div class="segmented-bar" data-meter="fuel"></div>
+            <div class="system__sub" id="fuelValue">78%</div>
+          </section>
+
+          <section class="system resource-system">
+            <div class="system__label">Shield Grid</div>
+            <div class="segmented-bar segmented-bar--blue" data-meter="shields"></div>
+            <div class="system__sub" id="shieldValue">84%</div>
+          </section>
+
+          <section class="brand-panel">
+            <div class="brand-panel__title">GalacticBridge</div>
+            <div class="brand-panel__sub">Venue mission console // Buyer demo workflow</div>
+          </section>
+
+          <section class="system resource-system">
+            <div class="system__label">Oxygen Mix</div>
+            <div class="segmented-bar segmented-bar--green" data-meter="oxygen"></div>
+            <div class="system__sub" id="oxygenValue">93%</div>
+          </section>
+
+          <section class="system resource-system">
+            <div class="system__label">Comm Signal</div>
+            <div class="segmented-bar segmented-bar--cyan" data-meter="comms"></div>
+            <div class="system__sub" id="commsValue">67%</div>
+          </section>
+
+          <section class="system alert-system">
+            <div class="system__label">Alert Lattice</div>
+            <div class="alert-chip" id="alertChip">Nominal</div>
+            <div class="system__sub">Hazard band</div>
+          </section>
+        </header>
+
+        <div class="subnav-strip">
+          <span>Contract operations</span>
+          <span class="captain-banner" id="contractBanner">Orion Relay Run // Briefing</span>
+          <div class="subnav-meta">
+            <span>Sector Aurek-9</span>
+            <span id="clockReadout">04:18:22 UTC</span>
+          </div>
+        </div>
+
+        <section class="bridge-grid">
+          <aside class="left-column">
+            <article class="module radar-module">
+              <div class="module__header">
+                <span>Engine Status</span>
+                <span class="module__hint">Stabilizer</span>
+              </div>
+              <canvas id="radarCanvas" width="320" height="320" aria-label="Engine radar"></canvas>
+              <div class="mini-thrust">
+                <div class="mini-thrust__label">Vector Balance</div>
+                <div class="mini-thrust__bars" id="engineBars"></div>
+              </div>
+              <div class="micro-status">
+                <div><span>Heat</span><strong id="heatValue">73C</strong></div>
+                <div><span>Drift</span><strong id="driftValue">0.28</strong></div>
+                <div><span>Bias</span><strong id="biasValue">Green</strong></div>
+              </div>
+            </article>
+
+            <article class="module hyperdrive-module">
+              <div class="module__header">
+                <span>Hyperdrive</span>
+                <span class="module__hint">Spool ring</span>
+              </div>
+              <div class="hyperdrive-module__body">
+                <div class="hyperdrive-core">
+                  <div class="hyperdrive-core__ring"></div>
+                  <div class="hyperdrive-core__ring hyperdrive-core__ring--outer"></div>
+                  <div class="hyperdrive-core__center"></div>
+                  <div class="hyperdrive-core__spokes"></div>
+                </div>
+                <div class="hyperdrive-panel">
+                  <div class="hyperdrive-panel__eyebrow">Jump Chamber</div>
+                  <div class="hyperdrive-panel__meter" id="hyperdriveMeter"></div>
+                  <button class="command-button hyperdrive-cta" data-action="activate">
+                    Engage
+                  </button>
+                </div>
+              </div>
+              <div class="hyperdrive-lights" id="hyperdriveLights"></div>
+            </article>
+
+            <article class="module coordinates-module">
+              <div class="module__header">
+                <span>Coordinates</span>
+                <span class="module__hint">Nav drift</span>
+              </div>
+              <div class="coordinates-display">
+                <div><span>X</span><strong id="coordX">-12.45</strong></div>
+                <div><span>Y</span><strong id="coordY">04.88</strong></div>
+                <div><span>Z</span><strong id="coordZ">67.22</strong></div>
+              </div>
+              <div class="switch-bank" id="switchBank"></div>
+            </article>
+          </aside>
+
+          <section class="center-column">
+            <div class="nav-title">
+              <span class="nav-title__main" id="missionTitle">Orion Relay Run</span>
+              <span class="nav-title__meta" id="modeReadout">Briefing // Crew ready</span>
+            </div>
+
+            <article class="module view-module">
+              <div class="display-frame">
+                <div class="frame-meter frame-meter--left" id="portMeter"></div>
+                <div class="frame-meter frame-meter--right" id="starboardMeter"></div>
+                <canvas id="starfieldCanvas" width="1280" height="760"></canvas>
+                <div class="display-wire display-wire--a" aria-hidden="true"></div>
+                <div class="display-wire display-wire--b" aria-hidden="true"></div>
+                <div class="display-overlay display-overlay--left">
+                  <div class="telemetry-stack">
+                    <span class="telemetry-stack__title">Energy</span>
+                    <div class="mini-segments mini-segments--multicolor" data-mini-meter="energy"></div>
+                  </div>
+                  <div class="telemetry-stack">
+                    <span class="telemetry-stack__title">Warp</span>
+                    <div class="mini-segments mini-segments--cyan" data-mini-meter="warp"></div>
+                  </div>
+                </div>
+                <div class="display-overlay display-overlay--right">
+                  <button class="icon-toggle is-active" type="button">Nav</button>
+                  <button class="icon-toggle" type="button">Scan</button>
+                  <button class="icon-toggle" type="button">Life</button>
+                  <button class="icon-toggle" type="button">Drone</button>
+                  <button class="icon-toggle" type="button">Grid</button>
+                </div>
+                <div class="scanline"></div>
+                <div class="frame-bolts" aria-hidden="true">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="target-chip" id="targetChip">Objective: Relay timing window</div>
+                <div class="destination-tag" id="destinationTag">Destination // Orion Span Terminal</div>
+                <div class="screen-kpi screen-kpi--left">
+                  <span>Route risk</span>
+                  <strong id="threatValue">38%</strong>
+                </div>
+                <div class="screen-kpi screen-kpi--right">
+                  <span>Route confidence</span>
+                  <strong id="screenShieldValue">84%</strong>
+                </div>
+                <div class="display-footer-lights" id="displayFooterLights"></div>
+              </div>
+            </article>
+
+            <div class="command-row">
+              <button class="command-button" data-action="scan">Scan</button>
+              <button class="command-button command-button--green" data-action="dock">Dock</button>
+              <button class="command-button command-button--amber" data-action="boost">Boost</button>
+              <button class="command-button command-button--danger" data-action="eject">Emergency</button>
+            </div>
+
+            <div class="lower-deck">
+              <article class="module mode-module contract-module">
+                <div class="module__header">
+                  <span>Contract Board</span>
+                  <span class="module__hint">Operator runbook</span>
+                </div>
+                <div class="contract-pills">
+                  <button class="mode-pill is-active" data-contract="orion" type="button">Orion Relay Run</button>
+                  <button class="mode-pill" data-contract="helios" type="button">Helios Freight Escort</button>
+                  <button class="mode-pill" data-contract="vega" type="button">Vega Medical Corridor</button>
+                </div>
+              </article>
+
+              <article class="module throttle-module">
+                <div class="module__header">
+                  <span>Phase Track</span>
+                  <span class="module__hint" id="phaseHint">Briefing</span>
+                </div>
+                <div class="phase-panel">
+                  <div class="phase-steps" id="phaseSteps"></div>
+                  <div class="phase-copy" id="phaseCopy">Select a contract, then Scan to begin.</div>
+                </div>
+              </article>
+
+              <article class="module aux-module outcome-module">
+                <div class="module__header">
+                  <span>Outcome</span>
+                  <span class="module__hint">Buyer value</span>
+                </div>
+                <div class="outcome-grid">
+                  <div><span>Status</span><strong id="missionStatus">Awaiting briefing</strong></div>
+                  <div><span>ETA</span><strong id="missionEta">11 min</strong></div>
+                  <div><span>Payout</span><strong id="missionPayout">$18.5K</strong></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <aside class="right-column">
+            <article class="module comms-module">
+              <div class="module__header">
+                <span>Communication</span>
+                <span class="module__hint">Burst array</span>
+              </div>
+              <div class="signal-bars" id="signalBars"></div>
+              <div class="comms-copy" id="commsCopy">Relay channel clean // no distortion</div>
+            </article>
+
+            <article class="module weapons-module">
+              <div class="module__header">
+                <span>Mission Systems</span>
+                <span class="module__hint">Hazard control</span>
+              </div>
+              <div class="weapon-row">
+                <span class="weapon-dot weapon-dot--red"></span>
+                <span>Beacon</span>
+                <strong class="weapon-state weapon-state--red" id="beaconState">Online</strong>
+              </div>
+              <div class="weapon-row">
+                <span class="weapon-dot weapon-dot--amber"></span>
+                <span>Tow Link</span>
+                <strong class="weapon-state weapon-state--amber" id="towState">Ready</strong>
+              </div>
+              <div class="weapon-row">
+                <span class="weapon-dot weapon-dot--green"></span>
+                <span>Deflectors</span>
+                <strong class="weapon-state weapon-state--green" id="deflectorState">Active</strong>
+              </div>
+              <div class="weapon-charge" id="weaponCharge"></div>
+            </article>
+
+            <article class="module shield-module">
+              <div class="module__header">
+                <span>Shield Control</span>
+                <span class="module__hint">Orbital shell</span>
+              </div>
+              <canvas id="shieldCanvas" width="360" height="360" aria-label="Shield dial"></canvas>
+              <div class="shield-scale" id="shieldScale"></div>
+              <div class="shield-copy" id="shieldCopy">Deflection envelope holding.</div>
+            </article>
+
+            <article class="module emergency-module">
+              <div class="module__header">
+                <span>Emergency</span>
+                <span class="module__hint">Alarm bus</span>
+              </div>
+              <button class="emergency-button" id="emergencyButton" type="button">Standby</button>
+              <div class="alarm-strip" id="alarmStrip"></div>
+            </article>
+          </aside>
+        </section>
+
+        <footer class="status-ribbon">
+          <div class="status-ribbon__label">Live feed</div>
+          <div class="status-ribbon__ticker" id="statusFeed"></div>
+        </footer>
+      </main>
+      </div>
+    </div>
+
+    <script src="./app.js?v=20260314q"></script>
+  </body>
+</html>
