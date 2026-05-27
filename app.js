@@ -18,9 +18,9 @@ const state = {
   shieldPulse: 0.84,
 };
 
-const phases = ["Briefing", "Scan", "Align", "Jump/Dock", "Complete"];
+let phases = ["Briefing", "Scan", "Align", "Jump/Dock", "Complete"];
 
-const contracts = {
+const defaultContracts = {
   orion: {
     title: "Orion Relay Run",
     destination: "Orion Span Terminal",
@@ -58,6 +58,7 @@ const contracts = {
     coords: { x: -4.7, y: 52.14, z: -21.6 },
   },
 };
+let contracts = { ...defaultContracts };
 
 const statusMessages = [
   "Operator profile synced to the bridge glass.",
@@ -325,6 +326,15 @@ function setSegmentState(segments, value) {
 
 function getActiveContract() {
   return contracts[state.contractId] || contracts.orion;
+}
+
+function syncContractButtons() {
+  document.querySelectorAll("[data-contract]").forEach((button) => {
+    const contract = contracts[button.dataset.contract];
+    if (contract) {
+      button.textContent = contract.title;
+    }
+  });
 }
 
 function getPhaseStatus() {
@@ -1729,6 +1739,33 @@ function selectContract(contractId) {
   writeStatus(`${getActiveContract().title} selected. ${getActiveContract().feed}`);
 }
 
+async function loadContractData() {
+  try {
+    const response = await fetch("./api/contracts", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Contract API returned ${response.status}`);
+    const payload = await response.json();
+    if (!payload.contracts || !payload.defaultContractId || !Array.isArray(payload.phases)) {
+      throw new Error("Contract API payload was incomplete");
+    }
+    contracts = payload.contracts;
+    phases = payload.phases;
+    if (contracts[payload.defaultContractId]) {
+      state.contractId = payload.defaultContractId;
+    }
+    state.phaseIndex = 0;
+    state.hold = false;
+    state.coords = { ...getActiveContract().coords };
+    syncContractButtons();
+    updateTelemetryText();
+    updateMissionDisplay();
+    writeStatus(`Contract feed synced from bridge API. ${getActiveContract().title} is ready.`);
+  } catch (error) {
+    contracts = { ...defaultContracts };
+    syncContractButtons();
+    console.warn("Contract API unavailable; using embedded mission data.", error);
+  }
+}
+
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll("[data-mode]").forEach((button) => {
@@ -1777,6 +1814,7 @@ updateClock();
 updateMeters();
 updateTelemetryText();
 updateMissionDisplay();
+syncContractButtons();
 writeStatus("GalacticBridge mission workflow ready. Select a contract, then use Scan, Boost, and Dock to complete it.");
 renderState.rafId = requestAnimationFrame(animate);
 
@@ -1795,3 +1833,4 @@ readyGate.then(() => {
 stopLoops();
 runTelemetryLoop();
 runStatusLoop();
+loadContractData();

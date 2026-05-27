@@ -37,6 +37,15 @@ python3 server.py
 
 The preview server exposes a deployment-friendly health check at `GET /health` and supports `HOST`, `PORT`, and `STATIC_ROOT` environment variables for service mode.
 
+Mission data is also available through:
+
+```text
+GET /api/contracts
+GET /api/contracts/{contractId}
+```
+
+The browser app consumes that API when served through `server.py` and falls back to embedded demo data when `index.html` is opened directly from disk.
+
 ## Test
 
 Run the server checks with:

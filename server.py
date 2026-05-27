@@ -11,6 +11,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 class GalacticBridgeRequestHandler(SimpleHTTPRequestHandler):
@@ -19,13 +20,23 @@ class GalacticBridgeRequestHandler(SimpleHTTPRequestHandler):
     server_version = "GalacticBridgeHTTP/1.0"
 
     def do_GET(self) -> None:  # noqa: N802 - stdlib hook name
-        if self.path.rstrip("/") == "/health":
+        route = urlparse(self.path).path.rstrip("/") or "/"
+
+        if route == "/health":
             self._handle_health()
+            return
+        if route == "/api/contracts":
+            self._handle_contracts()
+            return
+        if route.startswith("/api/contracts/"):
+            contract_id = route.rsplit("/", 1)[-1]
+            self._handle_contract_detail(contract_id)
             return
         super().do_GET()
 
     def end_headers(self) -> None:
-        if self.path.rstrip("/") == "/health":
+        route = urlparse(self.path).path.rstrip("/") or "/"
+        if route == "/health" or route.startswith("/api/"):
             self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
@@ -36,12 +47,70 @@ class GalacticBridgeRequestHandler(SimpleHTTPRequestHandler):
     def _handle_health(self) -> None:
         directory = Path(self.directory)
         index_exists = (directory / "index.html").is_file()
+        contracts_present = self._contracts_path().is_file()
         status = HTTPStatus.OK if index_exists else HTTPStatus.SERVICE_UNAVAILABLE
         payload = {
             "status": "ok" if index_exists else "degraded",
             "asset_root": str(directory),
             "index_present": index_exists,
+            "contracts_present": contracts_present,
         }
+        self._send_json(status, payload)
+
+    def _handle_contracts(self) -> None:
+        payload = self._load_contract_payload()
+        if payload is None:
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                {"status": "degraded", "error": "contracts data unavailable"},
+            )
+            return
+        self._send_json(
+            HTTPStatus.OK,
+            {
+                "contracts": payload["contracts"],
+                "phases": payload["phases"],
+                "defaultContractId": payload["defaultContractId"],
+            },
+        )
+
+    def _handle_contract_detail(self, contract_id: str) -> None:
+        payload = self._load_contract_payload()
+        if payload is None:
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                {"status": "degraded", "error": "contracts data unavailable"},
+            )
+            return
+
+        contract = payload["contracts"].get(contract_id)
+        if contract is None:
+            self._send_json(
+                HTTPStatus.NOT_FOUND,
+                {"status": "not_found", "error": f"unknown contract '{contract_id}'"},
+            )
+            return
+
+        self._send_json(HTTPStatus.OK, {"id": contract_id, "contract": contract})
+
+    def _contracts_path(self) -> Path:
+        return Path(self.directory) / "data" / "contracts.json"
+
+    def _load_contract_payload(self) -> dict[str, Any] | None:
+        try:
+            with self._contracts_path().open(encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except FileNotFoundError:
+            return None
+
+        contracts = payload.get("contracts")
+        phases = payload.get("phases")
+        default_contract_id = payload.get("defaultContractId")
+        if not isinstance(contracts, dict) or not isinstance(phases, list) or not isinstance(default_contract_id, str):
+            raise ValueError("contracts.json is missing required fields")
+        return payload
+
+    def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
